@@ -15,7 +15,7 @@
 ## 🌐 Live Deployments
 
 - **Frontend Client (Vercel)**: [https://hirevo-prasad.vercel.app](https://hirevo-prasad.vercel.app)
-- **Backend API (Render)**: [https://hirevo.onrender.com](https://hirevo.onrender.com)
+- **Backend API (Render)**: [https://smart-placement-management-system-7eh7.onrender.com](https://smart-placement-management-system-7eh7.onrender.com)
 - **Local Client**: `http://localhost:5173`
 - **Local Server**: `http://localhost:8080/spms`
 
