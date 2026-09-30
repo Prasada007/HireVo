@@ -34,6 +34,9 @@ public class AppConfig implements WebMvcConfigurer {
 
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+        converters.add(new org.springframework.http.converter.ByteArrayHttpMessageConverter());
+        converters.add(new org.springframework.http.converter.ResourceHttpMessageConverter());
+        converters.add(new org.springframework.http.converter.StringHttpMessageConverter());
         MappingJackson2HttpMessageConverter converter =
                 new MappingJackson2HttpMessageConverter();
         converter.setObjectMapper(objectMapper());

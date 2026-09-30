@@ -28,23 +28,33 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
+        String token = null;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7); // strip "Bearer "
+            token = authHeader.substring(7); // strip "Bearer "
+        } else if (request.getParameter("token") != null && !request.getParameter("token").trim().isEmpty()) {
+            token = request.getParameter("token").trim();
+        }
 
-            if (jwtUtil.isTokenValid(token)) {
-                String email = jwtUtil.extractEmail(token);
-                String role  = jwtUtil.extractRole(token);
+        if (token != null) {
 
-                // Build Spring Security authentication with the role from JWT
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(
-                                email,
-                                null,
-                                List.of(new SimpleGrantedAuthority("ROLE_" + role))
-                        );
+            try {
+                if (jwtUtil.isTokenValid(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    String email = jwtUtil.extractEmail(token);
+                    String role  = jwtUtil.extractRole(token);
 
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                    if (email != null && role != null) {
+                        UsernamePasswordAuthenticationToken auth =
+                                new UsernamePasswordAuthenticationToken(
+                                        email,
+                                        null,
+                                        List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
+                                );
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+                    }
+                }
+            } catch (Exception e) {
+                SecurityContextHolder.clearContext();
             }
         }
 

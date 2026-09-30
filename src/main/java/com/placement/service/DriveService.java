@@ -30,6 +30,9 @@ public class DriveService {
     @Autowired
     private AdminRepo adminRepo;
 
+    @Autowired
+    private NotificationService notificationService;
+
     public PlacementDrive createDrive(DriveRequest req) {
         PlacementRequest request = requestRepo.findById(req.getRequestId())
                 .orElseThrow(() -> new RuntimeException("Placement request not found"));
@@ -50,6 +53,18 @@ public class DriveService {
         
         request.setStatus("APPROVED");
         requestRepo.save(request);
+
+        // Real-time broadcast to all connected students
+        try {
+            notificationService.sendToRole("STUDENT", "NEW_DRIVE", java.util.Map.of(
+                    "driveId", savedDrive.getId(),
+                    "companyName", savedDrive.getCompany().getName(),
+                    "jobRole", savedDrive.getRequest().getJobRole(),
+                    "salaryLpa", savedDrive.getRequest().getSalaryLpa(),
+                    "venue", savedDrive.getVenue() != null ? savedDrive.getVenue() : "TBD",
+                    "message", "New placement drive: " + savedDrive.getCompany().getName() + " (" + savedDrive.getRequest().getJobRole() + ")"
+            ));
+        } catch (Exception ignored) {}
         
         return savedDrive;
     }

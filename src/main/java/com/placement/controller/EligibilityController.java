@@ -47,13 +47,21 @@ public class EligibilityController {
 
     // Auto-shortlist all eligible students for a drive
     @PostMapping("/shortlist/{driveId}")
-    public ResponseEntity<ApiResponse> autoShortlist(@PathVariable Integer driveId) {
+    public ResponseEntity<ApiResponse> autoShortlist(
+            @PathVariable Integer driveId,
+            org.springframework.security.core.Authentication authentication) {
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Forbidden: Only administrators can execute auto-shortlisting", null));
+        }
         List<ShortlistedCandidate> result =
                 autoShortlistService.autoShortlist(driveId);
         return ResponseEntity.ok(new ApiResponse(
-                true,
-                result.size() + " students shortlisted",
-                result
+            true,
+            result.size() + " students shortlisted",
+            result
         ));
     }
 

@@ -89,14 +89,24 @@ export default function StudentDashboard() {
                     />
                   </div>
                   <div className="resume-row">
-                    <a
-                        href={`${BACKEND_URL}/api/students/${user.id}/resume`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const res = await api.get(`/students/${user.id}/resume`, { responseType: "blob" });
+                            const blob = new Blob([res.data], { type: res.headers["content-type"] || "application/pdf" });
+                            const url = window.URL.createObjectURL(blob);
+                            window.open(url, "_blank");
+                          } catch {
+                            const token = localStorage.getItem("token");
+                            window.open(`${BACKEND_URL}/api/students/${user.id}/resume?token=${encodeURIComponent(token || "")}`, "_blank");
+                          }
+                        }}
                         className="resume-link"
+                        style={{ background: "none", border: "none", cursor: "pointer", font: "inherit", padding: 0 }}
                     >
                       📄 View Resume
-                    </a>
+                    </button>
                   </div>
                 </>
             ) : (

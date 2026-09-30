@@ -26,6 +26,14 @@ public class EligibilityService {
         PlacementRequest rule = requestRepo
                 .findById(requestId)
                 .orElseThrow(() -> new RuntimeException("No placement request found"));
+        return isEligible(student, rule);
+    }
+
+    // Overloaded check accepting pre-fetched PlacementRequest rule to eliminate N+1 queries in loops
+    public boolean isEligible(Student student, PlacementRequest rule) {
+        if (rule == null) {
+            return false;
+        }
 
         // Check CGPA
         if (rule.getMinCgpa() != null && student.getCgpa() < rule.getMinCgpa()) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../../api/axios";
+import api, { BACKEND_URL } from "../../api/axios";
 import DashboardLayout from "../../components/DashboardLayout";
 import StatusBadge from "../../components/StatusBadge";
 import { useToast } from "../../components/Toast";
@@ -105,19 +105,38 @@ export default function DriveApplicants() {
                 />
               </div>
 
+              <div style={{ marginTop: "12px", display: "flex", justifyContent: "flex-start" }}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={async () => {
+                    try {
+                      const res = await api.get(`/students/${app.student?.id}/resume`, { responseType: "blob" });
+                      const blob = new Blob([res.data], { type: res.headers["content-type"] || "application/pdf" });
+                      const url = window.URL.createObjectURL(blob);
+                      window.open(url, "_blank");
+                    } catch {
+                      const token = localStorage.getItem("token");
+                      window.open(`${BACKEND_URL}/api/students/${app.student?.id}/resume?token=${encodeURIComponent(token || "")}`, "_blank");
+                    }
+                  }}
+                >
+                  📄 View Resume
+                </button>
+              </div>
+
               <div className="applicant-actions mt-md">
                 <span className="action-label">Update:</span>
                 <div className="action-buttons">
                   {STATUS_OPTIONS.filter((s) => s !== app.status).map((s) => (
                     <button
                       key={s}
-                      className={`btn btn-sm ${
-                        s === "SELECTED"
+                      className={`btn btn-sm ${s === "SELECTED"
                           ? "btn-success"
                           : s === "REJECTED"
-                          ? "btn-danger"
-                          : "btn-secondary"
-                      }`}
+                            ? "btn-danger"
+                            : "btn-secondary"
+                        }`}
                       onClick={() => updateStatus(app.id, s)}
                       disabled={updatingId === app.id}
                     >

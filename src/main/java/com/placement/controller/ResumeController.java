@@ -23,11 +23,20 @@ public class ResumeController {
     @Autowired
     private StudentProfileService profileService;
 
+    @Autowired
+    private com.placement.repository.StudentRepo studentRepo;
+
     // Upload resume
     @PostMapping("/{studentId}/resume")
     public ResponseEntity<ApiResponse> uploadResume(
             @PathVariable Integer studentId,
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            org.springframework.security.core.Authentication authentication) {
+
+        if (!isAuthorizedStudentOrAdmin(studentId, authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Forbidden: You cannot upload resumes for other students", null));
+        }
 
         StudentProfile profile = profileService.uploadResume(studentId, file);
         return ResponseEntity.ok(new ApiResponse(
@@ -44,7 +53,13 @@ public class ResumeController {
             @RequestParam String skills,
             @RequestParam(required = false) String internshipDetails,
             @RequestParam(required = false, defaultValue = "0")
-                Integer certificationScore) {
+                Integer certificationScore,
+            org.springframework.security.core.Authentication authentication) {
+
+        if (!isAuthorizedStudentOrAdmin(studentId, authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Forbidden: You cannot modify this profile", null));
+        }
 
         StudentProfile profile = profileService.updateSkills(
                 studentId, skills, internshipDetails, certificationScore);
@@ -55,31 +70,77 @@ public class ResumeController {
     // Get profile
     @GetMapping("/{studentId}/profile")
     public ResponseEntity<ApiResponse> getProfile(
-            @PathVariable Integer studentId) {
+            @PathVariable Integer studentId,
+            org.springframework.security.core.Authentication authentication) {
+        if (!isAuthorizedStudentOrStaff(studentId, authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Forbidden: Access denied to student profile", null));
+        }
         StudentProfile profile = profileService.getProfile(studentId);
         return ResponseEntity.ok(new ApiResponse(true, "Success", profile));
     }
 
+    private boolean isAuthorizedStudentOrAdmin(Integer studentId, org.springframework.security.core.Authentication authentication) {
+        if (authentication == null) return false;
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (isAdmin) return true;
+
+        return studentRepo.findById(studentId)
+                .map(s -> s.getEmail().equalsIgnoreCase(authentication.getName()))
+                .orElse(false);
+    }
+
+    private boolean isAuthorizedStudentOrStaff(Integer studentId, org.springframework.security.core.Authentication authentication) {
+        if (authentication == null) return false;
+        boolean isStaff = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_COMPANY"));
+        if (isStaff) return true;
+
+        return studentRepo.findById(studentId)
+                .map(s -> s.getEmail().equalsIgnoreCase(authentication.getName()))
+                .orElse(false);
+    }
+
     @GetMapping("/{studentId}/resume")
-    public ResponseEntity<byte[]> downloadResume(@PathVariable Integer studentId) {
+    public ResponseEntity<?> downloadResume(
+            @PathVariable Integer studentId,
+            org.springframework.security.core.Authentication authentication) {
+
+        if (!isAuthorizedStudentOrStaff(studentId, authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Forbidden: Access denied to resume", null));
+        }
+
         StudentProfile profile = profileService.getProfile(studentId);
         String path = profile.getResumePath();
 
-        if (path == null) {
-            return ResponseEntity.notFound().build();
+        if (path == null || path.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse(false, "No resume has been uploaded yet", null));
         }
 
         try {
             Path filePath = Paths.get(path);
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ApiResponse(false, "Resume file not found on disk", null));
+            }
+
             byte[] fileBytes = Files.readAllBytes(filePath);
+            String contentType = Files.probeContentType(filePath);
+            if (contentType == null) {
+                contentType = MediaType.APPLICATION_PDF_VALUE;
+            }
 
             return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_PDF)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=resume.pdf")
+                    .header(HttpHeaders.CONTENT_TYPE, contentType)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filePath.getFileName().toString() + "\"")
                     .body(fileBytes);
 
         } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse(false, "Could not read resume file", null));
         }
     }
 }

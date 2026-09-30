@@ -23,6 +23,12 @@ public class ApplicationService {
     @Autowired
     private PlacementDriveRepo driveRepo;
 
+    @Autowired
+    private EligibilityService eligibilityService;
+
+    @Autowired
+    private NotificationService notificationService;
+
     public Application apply(Integer studentId, Integer driveId) {
         if (applicationRepo.findByStudentIdAndDriveId(studentId, driveId).isPresent()) {
             throw new RuntimeException("Already applied to this drive");
@@ -32,11 +38,35 @@ public class ApplicationService {
         PlacementDrive drive = driveRepo.findById(driveId)
                 .orElseThrow(() -> new RuntimeException("Drive not found"));
 
+        if (drive.getRequest() != null) {
+            boolean eligible = eligibilityService.isEligible(student, drive.getRequest().getId());
+            if (!eligible) {
+                List<String> reasons = eligibilityService.getIneligibilityReasons(student, drive.getRequest().getId());
+                throw new RuntimeException("Not eligible for this drive: " + String.join(", ", reasons));
+            }
+        }
+
         Application application = new Application();
         application.setStudent(student);
         application.setDrive(drive);
         application.setStatus("APPLIED");
-        return applicationRepo.save(application);
+        Application saved = applicationRepo.save(application);
+
+        // Real-time alert to the company recruiter
+        if (drive.getCompany() != null && drive.getCompany().getEmail() != null) {
+            try {
+                notificationService.sendToUser(drive.getCompany().getEmail(), "NEW_APPLICANT", java.util.Map.of(
+                        "driveId", driveId,
+                        "studentId", student.getId(),
+                        "studentName", student.getName(),
+                        "branch", student.getBranch(),
+                        "cgpa", student.getCgpa(),
+                        "message", student.getName() + " (" + student.getBranch() + ") applied to your drive."
+                ));
+            } catch (Exception ignored) {}
+        }
+
+        return saved;
     }
 
     public List<Application> getByStudent(Integer studentId) {

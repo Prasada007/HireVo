@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../../api/axios";
+import api, { BACKEND_URL } from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import DashboardLayout from "../../components/DashboardLayout";
 import { useToast } from "../../components/Toast";
@@ -203,7 +203,26 @@ export default function MyProfile() {
         <div className="card-header">
           <h3 className="card-title">📄 Resume</h3>
           {student?.profile?.resumePath && (
-            <span className="badge badge-success">Uploaded</span>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <span className="badge badge-success">Uploaded</span>
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
+                onClick={async () => {
+                  try {
+                    const res = await api.get(`/students/${user.id}/resume`, { responseType: "blob" });
+                    const blob = new Blob([res.data], { type: res.headers["content-type"] || "application/pdf" });
+                    const url = window.URL.createObjectURL(blob);
+                    window.open(url, "_blank");
+                  } catch {
+                    const token = localStorage.getItem("token");
+                    window.open(`${BACKEND_URL}/api/students/${user.id}/resume?token=${encodeURIComponent(token || "")}`, "_blank");
+                  }
+                }}
+              >
+                👁️ View Resume
+              </button>
+            </div>
           )}
         </div>
         <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", marginBottom: "var(--space-md)" }}>

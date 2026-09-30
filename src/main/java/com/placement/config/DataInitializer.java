@@ -17,25 +17,28 @@ public class DataInitializer {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    private String getEnvOrProp(String name, String fallback) {
+        String val = System.getenv(name);
+        if (val == null || val.trim().isEmpty()) {
+            val = System.getProperty(name);
+        }
+        return (val != null && !val.trim().isEmpty()) ? val : fallback;
+    }
+
     @PostConstruct
     public void seed() {
-        if (adminRepo.findByEmail("admin@spms.com").isEmpty()) {
+        String adminEmail = getEnvOrProp("INITIAL_ADMIN_EMAIL", "admin@spms.com");
+        String adminPassword = getEnvOrProp("INITIAL_ADMIN_PASSWORD", "Admin@123");
+        String adminName = getEnvOrProp("INITIAL_ADMIN_NAME", "Placement Dean");
+
+        if (adminRepo.findByEmail(adminEmail).isEmpty()) {
             Admin admin = new Admin();
-            admin.setName("Super Admin");
-            admin.setEmail("admin@spms.com");
-            admin.setPassword(passwordEncoder.encode("Admin@123"));
+            admin.setName(adminName);
+            admin.setEmail(adminEmail);
+            admin.setPassword(passwordEncoder.encode(adminPassword));
             admin.setRole("PLACEMENT_OFFICER");
             adminRepo.save(admin);
-            System.out.println("=== DEFAULT ADMIN CREATED: admin@spms.com / Admin@123 ===");
-        }
-        if (adminRepo.findByEmail("admin@spm.com").isEmpty()) {
-            Admin admin = new Admin();
-            admin.setName("Admin SPMS");
-            admin.setEmail("admin@spm.com");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setRole("PLACEMENT_OFFICER");
-            adminRepo.save(admin);
-            System.out.println("=== DEFAULT ADMIN CREATED: admin@spm.com / admin123 ===");
+            System.out.println("=== DEFAULT ADMIN INITIALIZED for email: " + adminEmail + " ===");
         }
     }
 }

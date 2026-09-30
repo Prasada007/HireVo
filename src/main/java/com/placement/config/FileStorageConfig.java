@@ -9,15 +9,25 @@ public class FileStorageConfig {
 
     static {
         String uploadDir = System.getProperty("UPLOAD_DIR");
-        if (uploadDir == null) {
+        if (uploadDir == null || uploadDir.trim().isEmpty()) {
             uploadDir = System.getenv("UPLOAD_DIR");
         }
         if (uploadDir == null || uploadDir.trim().isEmpty()) {
-            uploadDir = "/home/prasad/spms-resumes/";
+            String userHome = System.getProperty("user.home", ".");
+            uploadDir = userHome + java.io.File.separator + "spms-resumes" + java.io.File.separator;
         }
-        if (!uploadDir.endsWith("/")) {
-            uploadDir += "/";
+        if (!uploadDir.endsWith(java.io.File.separator) && !uploadDir.endsWith("/")) {
+            uploadDir += java.io.File.separator;
         }
+
+        try {
+            java.io.File dir = new java.io.File(uploadDir);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+        } catch (Exception ignored) {
+        }
+
         RESUME_UPLOAD_DIR = uploadDir;
     }
 }

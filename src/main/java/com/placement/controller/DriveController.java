@@ -19,7 +19,15 @@ public class DriveController {
     private DriveService driveService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse> createDrive(@RequestBody DriveRequest req) {
+    public ResponseEntity<ApiResponse> createDrive(
+            @RequestBody DriveRequest req,
+            org.springframework.security.core.Authentication authentication) {
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Forbidden: Only administrators can schedule drives", null));
+        }
         try {
             PlacementDrive drive = driveService.createDrive(req);
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -51,8 +59,16 @@ public class DriveController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<ApiResponse> updateStatus(@PathVariable("id") Integer id,
-                                                    @RequestParam("value") String value) {
+    public ResponseEntity<ApiResponse> updateStatus(
+            @PathVariable("id") Integer id,
+            @RequestParam("value") String value,
+            org.springframework.security.core.Authentication authentication) {
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Forbidden: Only administrators can alter drive statuses", null));
+        }
         try {
             PlacementDrive drive = driveService.updateStatus(id, value);
             return ResponseEntity.ok(new ApiResponse(true, "Drive status updated", drive));

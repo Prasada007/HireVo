@@ -38,12 +38,7 @@ public class AnalyticsService {
         long totalApplications = applicationRepo.count();
 
         // Students placed = shortlisted with result SELECTED
-        long studentsPlaced = shortlistedRepo.findAll()
-                .stream()
-                .filter(sc -> "SELECTED".equalsIgnoreCase(sc.getResult()))
-                .map(sc -> sc.getStudent().getId())
-                .distinct()
-                .count();
+        long studentsPlaced = shortlistedRepo.countDistinctStudentsByResultIgnoreCase("SELECTED");
 
         // Placement percentage
         double placementPercentage = totalStudents > 0
@@ -51,23 +46,14 @@ public class AnalyticsService {
                 : 0;
 
         // Highest package
-        double highestPackage = requestRepo.findAll()
-                .stream()
-                .filter(r -> r.getSalaryLpa() != null)
-                .mapToDouble(r -> r.getSalaryLpa())
-                .max()
-                .orElse(0);
+        double highestPackage = requestRepo.findMaxSalaryLpa();
 
         // Students yet to apply
-        long studentsApplied = applicationRepo.findAll()
-                .stream()
-                .map(a -> a.getStudent().getId())
-                .distinct()
-                .count();
-        long studentsYetToApply = totalStudents - studentsApplied;
+        long studentsApplied = applicationRepo.countDistinctStudentsApplied();
+        long studentsYetToApply = Math.max(0, totalStudents - studentsApplied);
 
         // Upcoming drives
-        long upcomingDrives = driveRepo.findByStatus("UPCOMING").size();
+        long upcomingDrives = driveRepo.countByStatus("UPCOMING");
 
         stats.put("totalStudents", totalStudents);
         stats.put("totalCompanies", totalCompanies);

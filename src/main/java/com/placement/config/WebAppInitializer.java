@@ -41,7 +41,7 @@ public class WebAppInitializer implements WebApplicationInitializer {
 
         registration.setMultipartConfig(
                 new jakarta.servlet.MultipartConfigElement(
-                        FileStorageConfig.RESUME_UPLOAD_DIR,
+                        "",
                         2 * 1024 * 1024,  // max file size 2MB
                         4 * 1024 * 1024,  // max request size 4MB
                         0

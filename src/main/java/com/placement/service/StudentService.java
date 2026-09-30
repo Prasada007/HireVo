@@ -48,14 +48,18 @@ public class StudentService {
         return studentRepo.findByEmail(email);
     }
 
-    public Student update(Integer id, Student updated) {
+    public Student update(Integer id, Student updated, boolean isAdmin) {
         Student existing = studentRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
-        existing.setName(updated.getName());
-        existing.setPhone(updated.getPhone());
-        existing.setCgpa(updated.getCgpa());
-        existing.setBranch(updated.getBranch());
-        existing.setHasBacklog(updated.getHasBacklog());
+        if (updated.getName() != null) existing.setName(updated.getName());
+        if (updated.getPhone() != null) existing.setPhone(updated.getPhone());
+        
+        // Only Admin can alter academic standing
+        if (isAdmin) {
+            if (updated.getCgpa() != null) existing.setCgpa(updated.getCgpa());
+            if (updated.getBranch() != null) existing.setBranch(updated.getBranch());
+            if (updated.getHasBacklog() != null) existing.setHasBacklog(updated.getHasBacklog());
+        }
         return studentRepo.save(existing);
     }
 }

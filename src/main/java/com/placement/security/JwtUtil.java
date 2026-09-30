@@ -13,11 +13,18 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private static final String SECRET = "spms_jwt_secret_key_must_be_32chars_long!";
+    private static final String DEFAULT_SECRET = "spms_jwt_secret_key_must_be_32chars_long_and_secure!";
     private static final long EXPIRY_MS = 24 * 60 * 60 * 1000L; // 24 hours
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String secret = System.getenv("JWT_SECRET");
+        if (secret == null || secret.trim().isEmpty()) {
+            secret = System.getProperty("JWT_SECRET");
+        }
+        if (secret == null || secret.length() < 32) {
+            secret = DEFAULT_SECRET;
+        }
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
 

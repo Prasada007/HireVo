@@ -46,7 +46,14 @@ public class CompanyController {
     }
 
     @PutMapping("/{id}/approve")
-    public ResponseEntity<ApiResponse> approve(@PathVariable("id") Integer id) {
+    public ResponseEntity<ApiResponse> approve(@PathVariable("id") Integer id,
+                                               org.springframework.security.core.Authentication authentication) {
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Forbidden: Only administrators can approve companies", null));
+        }
         try {
             Company company = companyService.approveCompany(id);
             return ResponseEntity.ok(new ApiResponse(true, "Company approved", company));
@@ -57,7 +64,14 @@ public class CompanyController {
     }
 
     @PutMapping("/{id}/reject")
-    public ResponseEntity<ApiResponse> reject(@PathVariable("id") Integer id) {
+    public ResponseEntity<ApiResponse> reject(@PathVariable("id") Integer id,
+                                              org.springframework.security.core.Authentication authentication) {
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Forbidden: Only administrators can reject companies", null));
+        }
         try {
             Company company = companyService.rejectCompany(id);
             return ResponseEntity.ok(new ApiResponse(true, "Company rejected", company));

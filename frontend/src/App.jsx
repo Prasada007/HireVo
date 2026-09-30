@@ -4,6 +4,7 @@ import { ToastProvider } from "./components/Toast";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 
 // Student pages
@@ -45,6 +46,7 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public routes */}
+      <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
@@ -68,8 +70,7 @@ function AppRoutes() {
       <Route path="/company/drives/:driveId/applicants" element={<PrivateRoute role="COMPANY"><DriveApplicants /></PrivateRoute>} />
 
       {/* Catch-all */}
-      <Route path="*" element={user ? <NotFound /> : <Navigate to="/login" />} />
-      <Route index element={<Navigate to={getDefaultRoute()} />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

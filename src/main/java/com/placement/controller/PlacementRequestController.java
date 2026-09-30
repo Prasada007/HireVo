@@ -19,7 +19,14 @@ public class PlacementRequestController {
     @PostMapping("/company/{companyId}")
     public ResponseEntity<ApiResponse> createRequest(
             @PathVariable Integer companyId,
-            @RequestBody PlacementRequest req) {
+            @RequestBody PlacementRequest req,
+            org.springframework.security.core.Authentication authentication) {
+        boolean isStudent = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_STUDENT"));
+        if (isStudent) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Forbidden: Students cannot create placement requests", null));
+        }
         try {
             PlacementRequest created = requestService.createRequest(companyId, req);
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -45,7 +52,14 @@ public class PlacementRequestController {
     @PutMapping("/{id}/status")
     public ResponseEntity<ApiResponse> updateStatus(
             @PathVariable Integer id,
-            @RequestParam String status) {
+            @RequestParam String status,
+            org.springframework.security.core.Authentication authentication) {
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Forbidden: Only administrators can update placement request statuses", null));
+        }
         try {
             PlacementRequest req = requestService.updateStatus(id, status);
             return ResponseEntity.ok(new ApiResponse(true, "Status updated", req));
